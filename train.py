@@ -1,7 +1,11 @@
+
+from model import model
 import logging
 import numpy as np
-
+import random
+import torch.backends.cudnn as cudnn
 import torch
+
 def train_logger(num):
     logger = logging.getLogger(__name__)
     #设置打印的级别，一共有6个级别，从低到高分别为：
@@ -23,8 +27,6 @@ def train_logger(num):
     return logger
 
 
-import random
-import torch.backends.cudnn as cudnn
 #基本配置
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -37,14 +39,14 @@ def setup_seed(seed):
 #在train文件下调用下面这行命令，参数随意设置，
 #只要这个参数数值一样，每次生成的顺序也就一样
 setup_seed(2022)
-
+net=model(5)
 trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.03})
 def train():
     num_epochs = 3
     for epoch in range(1, num_epochs + 1):
         for X, y in data_iter:
             with autograd.record():
-                l = loss(net(X), y)
+                l = torch.(net(X), y)
             l.backward()
             trainer.step(batch_size)
         l = loss(net(features), labels)

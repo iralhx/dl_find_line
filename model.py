@@ -8,9 +8,9 @@ class Flatten(nn.Module):
    def forward(self,x):
        return x.view(x.size(0),-1)
    
-class Yolo_v1(nn.Module):
+class model(nn.Module):
    def __init__(self, num_class):
-       super(Yolo_v1,self).__init__()
+       super(model,self).__init__()
        C = num_class
        self.conv_layer1=nn.Sequential(
            nn.Conv2d(in_channels=3,out_channels=64,kernel_size=7,stride=1,padding=7//2),
