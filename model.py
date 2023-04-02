@@ -9,7 +9,6 @@ class Flatten(nn.Module):
    def forward(self,x):
        return x.view(x.size(0),-1)
    
-<<<<<<< HEAD
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
@@ -24,8 +23,6 @@ class SpatialAttention(nn.Module):
         output = self.sigmoid(output)
         return output
 
-=======
->>>>>>> 42755b907c72e73b716a1dc68d17af73a5927117
 class model(nn.Module):
    def __init__(self, num_class):
        super(model,self).__init__()
@@ -45,25 +42,25 @@ class model(nn.Module):
        self.flatten = Flatten()
        self.conn_layer1 = nn.Sequential(
            nn.Linear(in_features=64*64,out_features=1024),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=1024,out_features=512),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer3 = nn.Sequential(nn.Linear(in_features=512,out_features=256),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer4 = nn.Sequential(nn.Linear(in_features=256,out_features=128),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer5 = nn.Sequential(nn.Linear(in_features=128,out_features=64),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer6 = nn.Sequential(nn.Linear(in_features=64,out_features=32),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer7 = nn.Sequential(nn.Linear(in_features=32,out_features=16),
-           nn.Dropout(0.2),
+           nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer8 = nn.Sequential(nn.Linear(in_features=16,out_features=1))
        self._initialize_weights()
@@ -82,7 +79,6 @@ class model(nn.Module):
        output = self.conn_layer6(output)
        output = self.conn_layer7(output)
        output = self.conn_layer8(output)
-       output=math.e ** output
        return output
    
    def _initialize_weights(self):

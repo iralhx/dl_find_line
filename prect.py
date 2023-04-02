@@ -28,11 +28,12 @@ for imgs, targets,path in iter(md):
     imgs =imgs.reshape(1,1,256,256)
     k_b= net(imgs).cpu()
     k=float(k_b[0])
+    r_k=math.e**k
     img = cv2.imread(path)
     path=f"{base_path}/{i}.jpg"
     i=i+1
     # 绘制点之间的连线
-    cv2.line(img, (int(b),0), (512,int((512-b)/k)), (0, 255, 0), 2)
+    cv2.line(img, (int(b),0), (512,int((512-b)/r_k)), (0, 255, 0), 2)
     cv2.imwrite(path,img)
 
 

@@ -6,9 +6,10 @@ import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import math
 
 class MyDataset(data.Dataset):
-    def __init__(self,data_folder):
+    def __init__(self,data_folder,lenght=99999999):
         self.data_folder = data_folder
         img_path=f'{data_folder}/images'
         label_path=f'{data_folder}/labels'
@@ -27,11 +28,15 @@ class MyDataset(data.Dataset):
                 with open(label_label_path, 'r', encoding='utf-8') as f:
                         label = f.readline().split()
                         k=float(label[0])
+                        k = math.log(k)
                         self.labels.append(k)
-        # self.labels.sort()
-        # x = np.arange(len(self.labels))
-        # plt.bar(x,self.labels)
-        # plt.savefig(f'data.jpg')
+            if len(self.labels)>lenght:
+                 break
+        sortLabels = self.labels.copy()
+        sortLabels.sort()
+        x = np.arange(len(sortLabels))
+        plt.bar(x,sortLabels)
+        plt.savefig(f'data.jpg')
 
     def __getitem__(self, index):
         image = Image.open(self.filenames[index])
