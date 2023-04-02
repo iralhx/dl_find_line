@@ -1,6 +1,9 @@
+
+from model import model
 import logging
 import numpy as np
-
+import random
+import torch.backends.cudnn as cudnn
 import torch
 import torch.nn as nn
 import random
@@ -29,6 +32,7 @@ def train_logger(num):
     # logger.addHandler(file_log)
     logger.addHandler(print_log)
     return logger
+
 
 #基本配置
 def setup_seed(seed):
@@ -74,3 +78,16 @@ for epoch in range(1, num_epochs + 1):
         print('epoch %d, loss: %f' % (epoch, l))
 torch.save(net,"net.pt")
 print('finel bset loss: %f' % (bset_loss))
+setup_seed(2022)
+net=model(5)
+trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.03})
+def train():
+    num_epochs = 3
+    for epoch in range(1, num_epochs + 1):
+        for X, y in data_iter:
+            with autograd.record():
+                l = torch.(net(X), y)
+            l.backward()
+            trainer.step(batch_size)
+        l = loss(net(features), labels)
+        print('epoch %d, loss: %f' % (epoch, l.mean().asnumpy()))

@@ -9,6 +9,7 @@ class Flatten(nn.Module):
    def forward(self,x):
        return x.view(x.size(0),-1)
    
+<<<<<<< HEAD
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
@@ -23,6 +24,8 @@ class SpatialAttention(nn.Module):
         output = self.sigmoid(output)
         return output
 
+=======
+>>>>>>> 42755b907c72e73b716a1dc68d17af73a5927117
 class model(nn.Module):
    def __init__(self, num_class):
        super(model,self).__init__()

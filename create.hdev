@@ -22,6 +22,23 @@
 <l>    write_image (Image, 'bmp', 0, path+'images/'+mode+Index+'.bmp')</l>
 <l>    open_file(path+'labels/'+mode+Index+'.txt','output',FileHandle)</l>
 <l>    fwrite_string(FileHandle,k+' '+b)</l>
+<c></c>
+<l>b:=10</l>
+<l>minvalue:=10</l>
+<l>maxvalue:=30</l>
+<l>path:='E:/github/dl_find_line/dataset/test/'</l>
+<l>for Index := 1 to 30 by 1</l>
+<c>    </c>
+<l>    gen_image_const (Image, 'byte', 512, 512)</l>
+<l>    gen_rectangle1 (Rectangle, 0, 0, 512, 512)</l>
+<l>    overpaint_region (Image, Rectangle, 255, 'fill')</l>
+<l>    k:=minvalue+rand(1)*(maxvalue-minvalue)</l>
+<l>    gen_region_line (RegionLines, 0, b, (512-b)/k, 512)</l>
+<l>    dilation_circle (RegionLines, RegionLines, 2)</l>
+<l>    overpaint_region (Image, RegionLines, 0, 'fill')</l>
+<l>    write_image (Image, 'bmp', 0, path+'images/test'+Index+'.bmp')</l>
+<l>    open_file(path+'labels/test'+Index+'.txt','output',FileHandle)</l>
+<l>    fwrite_string(FileHandle,k)</l>
 <l>    close_file(FileHandle)</l>
 <l>endfor</l>
 <c></c>
