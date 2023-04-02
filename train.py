@@ -2,6 +2,14 @@ import logging
 import numpy as np
 
 import torch
+import torch.nn as nn
+import random
+import torch.backends.cudnn as cudnn
+from torch.utils.data import DataLoader, Dataset, dataloader, distributed
+from dataser import *
+from model import *
+from userloss import *
+
 def train_logger(num):
     logger = logging.getLogger(__name__)
     #设置打印的级别，一共有6个级别，从低到高分别为：
@@ -9,22 +17,19 @@ def train_logger(num):
     #setLevel设置的是最低打印的级别，低于该级别的将不会打印。
     logger.setLevel(level=logging.INFO)
     #打印到文件，并设置打印的文件名称和路径
-    file_log = logging.FileHandler('./run/{}/train.log'.format(num))
+    # file_log = logging.FileHandler('./run/{}/train.log'.format(num))
     #打印到终端
     print_log = logging.StreamHandler()
     #设置打印格式
     #%(asctime)表示当前时间，%(message)表示要打印的信息，用的时候会介绍。
     formatter = logging.Formatter('%(asctime)s     %(message)s')
-    file_log.setFormatter(formatter)
+    # file_log.setFormatter(formatter)
     print_log.setFormatter(formatter)
 
-    logger.addHandler(file_log)
+    # logger.addHandler(file_log)
     logger.addHandler(print_log)
     return logger
 
-
-import random
-import torch.backends.cudnn as cudnn
 #基本配置
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -36,16 +41,36 @@ def setup_seed(seed):
 #使用方法
 #在train文件下调用下面这行命令，参数随意设置，
 #只要这个参数数值一样，每次生成的顺序也就一样
-setup_seed(2022)
+setup_seed(3407)
 
-trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.03})
-def train():
-    num_epochs = 3
-    for epoch in range(1, num_epochs + 1):
-        for X, y in data_iter:
-            with autograd.record():
-                l = loss(net(X), y)
-            l.backward()
-            trainer.step(batch_size)
-        l = loss(net(features), labels)
-        print('epoch %d, loss: %f' % (epoch, l.mean().asnumpy()))
+
+loss = nn.MSELoss()
+md = MyDataset('./dataset/train/')
+net = model(1)
+net.cuda()
+dl = DataLoader(md,batch_size=8)
+log =train_logger(1)
+num_epochs = 200
+optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+
+
+bset_loss=999
+for epoch in range(1, num_epochs + 1):
+    pbar = enumerate(dl)
+    for i, (imgs, targets,_) in iter(pbar):
+        imgs=imgs.cuda()
+        targets=targets.cuda()
+        net_out=net(imgs).to(torch.float64)
+        l = loss(net_out, targets)
+        if bset_loss>l:
+            bset_loss=l
+            torch.save(net,"net_best.pt")
+            print('epoch %d, best_loss: %f' % (epoch, l))
+        optimizer.zero_grad()
+        l.backward()
+        # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradients
+        optimizer.step()
+
+        print('epoch %d, loss: %f' % (epoch, l))
+torch.save(net,"net.pt")
+print('finel bset loss: %f' % (bset_loss))
