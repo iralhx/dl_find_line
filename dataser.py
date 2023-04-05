@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import math
+import random
 
 class MyDataset(data.Dataset):
     def __init__(self,data_folder,lenght=99999999):
@@ -19,6 +20,8 @@ class MyDataset(data.Dataset):
         self.labels = []
 
         imgs = os.listdir(img_path)
+        random.shuffle(imgs)
+        sortLabels=[]
         for single_img_path in imgs:
             label_img_paths = os.path.join(img_path, single_img_path)
             txtpath = f'{single_img_path.split(".")[0]}.txt'
@@ -28,11 +31,12 @@ class MyDataset(data.Dataset):
                 with open(label_label_path, 'r', encoding='utf-8') as f:
                         label = f.readline().split()
                         k=float(label[0])
-                        k = math.log(k)
+                        # b=float(label[1])
+                        sortLabels.append(k)
+                        # self.labels.append(torch.tensor([k,b]))
                         self.labels.append(k)
             if len(self.labels)>lenght:
                  break
-        sortLabels = self.labels.copy()
         sortLabels.sort()
         x = np.arange(len(sortLabels))
         plt.bar(x,sortLabels)

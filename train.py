@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Dataset, dataloader, distributed
 from dataser import *
 from model import *
 from userloss import *
+from torch.optim.lr_scheduler import StepLR
 
 def train_logger(num):
     logger = logging.getLogger(__name__)
@@ -48,15 +49,16 @@ def setup_seed(seed):
 setup_seed(3407)
 
 
-loss = nn.MSELoss()
-md = MyDataset('./dataset/train/',lenght=20000)
+# loss = MSELoss(100)
+loss = nn.SmoothL1Loss(beta=0.01)
+md = MyDataset('./dataset/train/',lenght=1280)
 net = model(1)
 net.cuda()
-dl = DataLoader(md,batch_size=64)
+dl = DataLoader(md,batch_size=128)
 log =train_logger(1)
-num_epochs = 3
-optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9,weight_decay=0.1)
-
+num_epochs = 300
+optimizer = torch.optim.Adam(net.parameters(), lr=0.001,weight_decay=0.1)
+scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
 bset_loss=999
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
@@ -64,7 +66,7 @@ for epoch in range(1, num_epochs + 1):
         imgs=imgs.cuda()
         targets=targets.cuda()
         net_out=net(imgs).to(torch.float64)
-        l = loss(net_out, targets)
+        l = loss(net_out, targets.to(torch.float64))
         if bset_loss>l:
             bset_loss=l
             torch.save(net,"net_best.pt")
@@ -73,7 +75,7 @@ for epoch in range(1, num_epochs + 1):
         l.backward()
         # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradients
         optimizer.step()
-
+        scheduler.step()
         print('epoch %d, loss: %f' % (epoch, l))
 torch.save(net,"net.pt")
 print('finel bset loss: %f' % (bset_loss))

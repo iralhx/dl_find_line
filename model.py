@@ -23,6 +23,32 @@ class SpatialAttention(nn.Module):
         output = self.sigmoid(output)
         return output
 
+
+class kk(nn.Module):
+    def __init__(self, max_k,min_k):            
+        super(kk, self).__init__()
+        self.max_k = max_k
+        self.min_k = min_k
+        self.mind_k =(max_k+min_k)/2
+        self.weight = nn.Parameter(torch.Tensor(1))
+        self.weight1 = nn.Parameter(torch.Tensor(1))
+        self.s = nn.Sigmoid()
+        self.reset_parameters()
+ 
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(0))
+        self.weight.data.uniform_(-stdv, stdv)
+        stdv = 1. / math.sqrt(self.weight1.size(0))
+        self.weight1.data.uniform_(-stdv, stdv)
+        
+    def forward(self, input):
+        output = torch.zeros_like(input,dtype=float).cuda()
+        output[:,0]  =self.s(input[:,0])
+        output[:,1]  = self.mind_k + input[:,1] * self.weight
+        output[:,2]  = self.mind_k + input[:,2] * self.weight1
+        return output
+
+
 class model(nn.Module):
    def __init__(self, num_class):
        super(model,self).__init__()
@@ -43,19 +69,19 @@ class model(nn.Module):
        self.conn_layer1 = nn.Sequential(
            nn.Linear(in_features=64*64,out_features=1024),
            nn.Dropout(0.5),
-           nn.ReLU())
+           nn.Sigmoid())
        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=1024,out_features=512),
            nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer3 = nn.Sequential(nn.Linear(in_features=512,out_features=256),
            nn.Dropout(0.5),
-           nn.ReLU())
+           nn.Sigmoid())
        self.conn_layer4 = nn.Sequential(nn.Linear(in_features=256,out_features=128),
            nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer5 = nn.Sequential(nn.Linear(in_features=128,out_features=64),
            nn.Dropout(0.5),
-           nn.ReLU())
+           nn.Sigmoid())
        self.conn_layer6 = nn.Sequential(nn.Linear(in_features=64,out_features=32),
            nn.Dropout(0.5),
            nn.ReLU())
@@ -63,6 +89,7 @@ class model(nn.Module):
            nn.Dropout(0.5),
            nn.ReLU())
        self.conn_layer8 = nn.Sequential(nn.Linear(in_features=16,out_features=1))
+    #    self.kk = kk(0.6,1)
        self._initialize_weights()
        
    def forward(self,input):
@@ -79,6 +106,7 @@ class model(nn.Module):
        output = self.conn_layer6(output)
        output = self.conn_layer7(output)
        output = self.conn_layer8(output)
+    #    output = self.kk(output)
        return output
    
    def _initialize_weights(self):
