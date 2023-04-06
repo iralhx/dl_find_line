@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+from transformersmodel import *
 
 
 class Flatten(nn.Module):
@@ -45,9 +46,9 @@ class kk(nn.Module):
         return output
 
 
-class model(nn.Module):
+class ConModel(nn.Module):
    def __init__(self, num_class):
-       super(model,self).__init__()
+       super(ConModel,self).__init__()
        C = num_class
        self.conv_layer1=nn.Sequential(
            nn.Conv2d(in_channels=1,out_channels=2,kernel_size=3,stride=2,padding=3//2),
@@ -56,61 +57,46 @@ class model(nn.Module):
       )#8*128*128
        self.a1=SpatialAttention()
        self.conv_layer2=nn.Sequential(
-           nn.Conv2d(in_channels=1,out_channels=16,kernel_size=3,stride=1,padding=3//2),
+           nn.Conv2d(in_channels=1,out_channels=16,kernel_size=3,stride=2,padding=3//2),
            nn.BatchNorm2d(16),
            nn.ReLU()
-      )#16*128*128
+      )#16*64*64
        self.conv_layer3=nn.Sequential(
            nn.Conv2d(in_channels=16,out_channels=32,kernel_size=3,stride=1,padding=3//2),
            nn.BatchNorm2d(32),
            nn.ReLU()
-      )#32*128*128
+      )#32*64*64
        self.conv_layer4=nn.Sequential(
-           nn.Conv2d(in_channels=32,out_channels=64,kernel_size=3,stride=1,padding=3//2),
-           nn.BatchNorm2d(64),
-           nn.ReLU()
-      )#64*128*128
-       self.conv_layer5=nn.Sequential(
-           nn.Conv2d(in_channels=64,out_channels=64,kernel_size=3,stride=2,padding=3//2),
-           nn.BatchNorm2d(64),
-           nn.ReLU()
-      )#64*64*64
-       self.conv_layer6=nn.Sequential(
-           nn.Conv2d(in_channels=64,out_channels=32,kernel_size=3,stride=2,padding=3//2),
+           nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=2,padding=3//2),
            nn.BatchNorm2d(32),
            nn.ReLU()
       )#32*32*32
-       self.conv_layer7=nn.Sequential(
-           nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=2,padding=3//2),
-           nn.BatchNorm2d(32),
+       self.tr1=TransformerBlock(32,32,32)
+       self.conv_layer5=nn.Sequential(
+           nn.Conv2d(in_channels=32,out_channels=16,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(16),
            nn.ReLU()
-      )#32*16*16
-       self.conv_layer8=nn.Sequential(
-           nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=2,padding=3//2),
-           nn.BatchNorm2d(32),
+      )#16*16*16
+       self.conv_layer6=nn.Sequential(
+           nn.Conv2d(in_channels=16,out_channels=8,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(8),
            nn.ReLU()
-      )#32*8*8
+      )#8*8*8
        self.flatten = Flatten()
-       self.conn_layer1 = nn.Sequential(
-           nn.Linear(in_features=32*8*8,out_features=1024),
+       self.conn_layer1 = nn.Sequential(nn.Linear(in_features=8*8*8,out_features=256),
            nn.Dropout(0.2),
            nn.Sigmoid())
-       self.conn_layer2 = nn.Sequential(nn.Linear(in_features=1024,out_features=512),
+       self.conn_layer2 = nn.Sequential(nn.Linear(in_features=256,out_features=128),
            nn.Dropout(0.2),
            nn.ReLU())
-       self.conn_layer3 = nn.Sequential(nn.Linear(in_features=512,out_features=256),
+       self.tr2=TransformerLayer(128,128)
+       self.conn_layer3 = nn.Sequential(nn.Linear(in_features=128,out_features=64),
            nn.Dropout(0.2),
            nn.ReLU())
-       self.conn_layer4 = nn.Sequential(nn.Linear(in_features=256,out_features=128),
+       self.conn_layer4 = nn.Sequential(nn.Linear(in_features=64,out_features=32),
            nn.Dropout(0.2),
            nn.ReLU())
-       self.conn_layer5 = nn.Sequential(nn.Linear(in_features=128,out_features=64),
-           nn.Dropout(0.2),
-           nn.ReLU())
-       self.conn_layer6 = nn.Sequential(nn.Linear(in_features=64,out_features=32),
-           nn.Dropout(0.2),
-           nn.ReLU())
-       self.conn_layer7 = nn.Sequential(nn.Linear(in_features=32,out_features=1))
+       self.conn_layer5 = nn.Sequential(nn.Linear(in_features=32,out_features=1))
     #    self.kk = kk(0.6,1)
        self._initialize_weights()
        
@@ -121,17 +107,15 @@ class model(nn.Module):
        output = self.conv_layer3(output)
        output = self.conv_layer4(output)
        output = self.conv_layer5(output)
+    #    output = self.tr1(output)
        output = self.conv_layer6(output)
-       output = self.conv_layer7(output)
-       output = self.conv_layer8(output)
        output = self.flatten(output)
        output = self.conn_layer1(output)
        output = self.conn_layer2(output)
+       output = self.tr2(output)
        output = self.conn_layer3(output)
        output = self.conn_layer4(output)
        output = self.conn_layer5(output)
-       output = self.conn_layer6(output)
-       output = self.conn_layer7(output)
     #    output = self.kk(output)
        return output
    
@@ -147,5 +131,6 @@ class model(nn.Module):
                m.bias.data.zero_()
            elif isinstance(m, nn.Linear):
                m.weight.data.normal_(0, 0.01)
-               m.bias.data.zero_()
+               if m.bias != None:
+                    m.bias.data.zero_() 
 

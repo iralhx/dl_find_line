@@ -47,14 +47,14 @@ setup_seed(3407)
 
 
 #loss = MSELoss(100)
-loss = nn.SmoothL1Loss(beta=0.01)
-md = MyDataset('./dataset/train/',lenght=1280)
-net = model(1)
+loss = nn.SmoothL1Loss(beta=0.05)
+md = MyDataset('./dataset/train/',shuffle=True,lenght=20000)
+net = ConModel(1)
 net.cuda()
-dl = DataLoader(md,batch_size=64)
+dl = DataLoader(md,batch_size=128)
 log =train_logger(1)
 num_epochs = 300
-optimizer = torch.optim.Adagrad(net.parameters(), lr=0.001,weight_decay=0.1)
+optimizer = torch.optim.Adadelta(net.parameters(), lr=0.001)
 bset_loss=999
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)

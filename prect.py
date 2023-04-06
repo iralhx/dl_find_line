@@ -24,7 +24,7 @@ base_path='run'
 b=0
 ok=[]
 ng=[]
-error = 0.03
+error = 0.1
 for imgs, targets,path in iter(md):
     imgs = imgs.cuda()
     imgs =imgs.reshape(1,1,256,256)
@@ -44,6 +44,6 @@ for imgs, targets,path in iter(md):
     else:
         ok.append(i)
     i=i+1
-print ("OK")
+print ("OK: %d" % (len(ok)))
 print (ok)
 
