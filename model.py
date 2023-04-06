@@ -31,21 +31,17 @@ class kk(nn.Module):
         self.min_k = min_k
         self.mind_k =(max_k+min_k)/2
         self.weight = nn.Parameter(torch.Tensor(1))
-        self.weight1 = nn.Parameter(torch.Tensor(1))
         self.s = nn.Sigmoid()
         self.reset_parameters()
  
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(0))
         self.weight.data.uniform_(-stdv, stdv)
-        stdv = 1. / math.sqrt(self.weight1.size(0))
-        self.weight1.data.uniform_(-stdv, stdv)
         
     def forward(self, input):
         output = torch.zeros_like(input,dtype=float).cuda()
         output[:,0]  =self.s(input[:,0])
         output[:,1]  = self.mind_k + input[:,1] * self.weight
-        output[:,2]  = self.mind_k + input[:,2] * self.weight1
         return output
 
 
@@ -54,41 +50,67 @@ class model(nn.Module):
        super(model,self).__init__()
        C = num_class
        self.conv_layer1=nn.Sequential(
-           nn.Conv2d(in_channels=1,out_channels=1,kernel_size=3,stride=2,padding=3//2),
-           nn.BatchNorm2d(1),
+           nn.Conv2d(in_channels=1,out_channels=2,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(2),
            nn.ReLU()
-      )#1*128*128
+      )#8*128*128
        self.a1=SpatialAttention()
        self.conv_layer2=nn.Sequential(
-           nn.Conv2d(in_channels=1,out_channels=1,kernel_size=3,stride=2,padding=3//2),
-           nn.BatchNorm2d(1),
+           nn.Conv2d(in_channels=1,out_channels=16,kernel_size=3,stride=1,padding=3//2),
+           nn.BatchNorm2d(16),
            nn.ReLU()
-      )#1*64*64
-       self.a2=SpatialAttention()
+      )#16*128*128
+       self.conv_layer3=nn.Sequential(
+           nn.Conv2d(in_channels=16,out_channels=32,kernel_size=3,stride=1,padding=3//2),
+           nn.BatchNorm2d(32),
+           nn.ReLU()
+      )#32*128*128
+       self.conv_layer4=nn.Sequential(
+           nn.Conv2d(in_channels=32,out_channels=64,kernel_size=3,stride=1,padding=3//2),
+           nn.BatchNorm2d(64),
+           nn.ReLU()
+      )#64*128*128
+       self.conv_layer5=nn.Sequential(
+           nn.Conv2d(in_channels=64,out_channels=64,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(64),
+           nn.ReLU()
+      )#64*64*64
+       self.conv_layer6=nn.Sequential(
+           nn.Conv2d(in_channels=64,out_channels=32,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(32),
+           nn.ReLU()
+      )#32*32*32
+       self.conv_layer7=nn.Sequential(
+           nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(32),
+           nn.ReLU()
+      )#32*16*16
+       self.conv_layer8=nn.Sequential(
+           nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=2,padding=3//2),
+           nn.BatchNorm2d(32),
+           nn.ReLU()
+      )#32*8*8
        self.flatten = Flatten()
        self.conn_layer1 = nn.Sequential(
-           nn.Linear(in_features=64*64,out_features=1024),
-           nn.Dropout(0.5),
+           nn.Linear(in_features=32*8*8,out_features=1024),
+           nn.Dropout(0.2),
            nn.Sigmoid())
        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=1024,out_features=512),
-           nn.Dropout(0.5),
+           nn.Dropout(0.2),
            nn.ReLU())
        self.conn_layer3 = nn.Sequential(nn.Linear(in_features=512,out_features=256),
-           nn.Dropout(0.5),
-           nn.Sigmoid())
+           nn.Dropout(0.2),
+           nn.ReLU())
        self.conn_layer4 = nn.Sequential(nn.Linear(in_features=256,out_features=128),
-           nn.Dropout(0.5),
+           nn.Dropout(0.2),
            nn.ReLU())
        self.conn_layer5 = nn.Sequential(nn.Linear(in_features=128,out_features=64),
-           nn.Dropout(0.5),
-           nn.Sigmoid())
+           nn.Dropout(0.2),
+           nn.ReLU())
        self.conn_layer6 = nn.Sequential(nn.Linear(in_features=64,out_features=32),
-           nn.Dropout(0.5),
+           nn.Dropout(0.2),
            nn.ReLU())
-       self.conn_layer7 = nn.Sequential(nn.Linear(in_features=32,out_features=16),
-           nn.Dropout(0.5),
-           nn.ReLU())
-       self.conn_layer8 = nn.Sequential(nn.Linear(in_features=16,out_features=1))
+       self.conn_layer7 = nn.Sequential(nn.Linear(in_features=32,out_features=1))
     #    self.kk = kk(0.6,1)
        self._initialize_weights()
        
@@ -96,7 +118,12 @@ class model(nn.Module):
        output = self.conv_layer1(input)
        output = self.a1(output)
        output = self.conv_layer2(output)
-       output = self.a2(output)
+       output = self.conv_layer3(output)
+       output = self.conv_layer4(output)
+       output = self.conv_layer5(output)
+       output = self.conv_layer6(output)
+       output = self.conv_layer7(output)
+       output = self.conv_layer8(output)
        output = self.flatten(output)
        output = self.conn_layer1(output)
        output = self.conn_layer2(output)
@@ -105,7 +132,6 @@ class model(nn.Module):
        output = self.conn_layer5(output)
        output = self.conn_layer6(output)
        output = self.conn_layer7(output)
-       output = self.conn_layer8(output)
     #    output = self.kk(output)
        return output
    

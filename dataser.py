@@ -10,7 +10,7 @@ import math
 import random
 
 class MyDataset(data.Dataset):
-    def __init__(self,data_folder,lenght=99999999):
+    def __init__(self,data_folder,shuffle = False,lenght=99999999):
         self.data_folder = data_folder
         img_path=f'{data_folder}/images'
         label_path=f'{data_folder}/labels'
@@ -20,7 +20,8 @@ class MyDataset(data.Dataset):
         self.labels = []
 
         imgs = os.listdir(img_path)
-        random.shuffle(imgs)
+        if shuffle:
+            random.shuffle(imgs)
         sortLabels=[]
         for single_img_path in imgs:
             label_img_paths = os.path.join(img_path, single_img_path)
@@ -32,6 +33,7 @@ class MyDataset(data.Dataset):
                         label = f.readline().split()
                         k=float(label[0])
                         # b=float(label[1])
+                        k=math.exp(k)
                         sortLabels.append(k)
                         # self.labels.append(torch.tensor([k,b]))
                         self.labels.append(k)

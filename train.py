@@ -1,12 +1,9 @@
-
-from model import model
 import logging
 import numpy as np
 import random
 import torch.backends.cudnn as cudnn
 import torch
 import torch.nn as nn
-import random
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader, Dataset, dataloader, distributed
 from dataser import *
@@ -49,16 +46,15 @@ def setup_seed(seed):
 setup_seed(3407)
 
 
-# loss = MSELoss(100)
+#loss = MSELoss(100)
 loss = nn.SmoothL1Loss(beta=0.01)
 md = MyDataset('./dataset/train/',lenght=1280)
 net = model(1)
 net.cuda()
-dl = DataLoader(md,batch_size=128)
+dl = DataLoader(md,batch_size=64)
 log =train_logger(1)
 num_epochs = 300
-optimizer = torch.optim.Adam(net.parameters(), lr=0.001,weight_decay=0.1)
-scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
+optimizer = torch.optim.Adagrad(net.parameters(), lr=0.001,weight_decay=0.1)
 bset_loss=999
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
@@ -75,7 +71,6 @@ for epoch in range(1, num_epochs + 1):
         l.backward()
         # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradients
         optimizer.step()
-        scheduler.step()
         print('epoch %d, loss: %f' % (epoch, l))
 torch.save(net,"net.pt")
 print('finel bset loss: %f' % (bset_loss))
