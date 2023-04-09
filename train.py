@@ -11,27 +11,6 @@ from model import *
 from userloss import *
 from torch.optim.lr_scheduler import StepLR
 
-def train_logger(num):
-    logger = logging.getLogger(__name__)
-    #设置打印的级别，一共有6个级别，从低到高分别为：
-    #NOTEST、DEBUG、INFO、WARNING、ERROR、CRITICAL。
-    #setLevel设置的是最低打印的级别，低于该级别的将不会打印。
-    logger.setLevel(level=logging.INFO)
-    #打印到文件，并设置打印的文件名称和路径
-    # file_log = logging.FileHandler('./run/{}/train.log'.format(num))
-    #打印到终端
-    print_log = logging.StreamHandler()
-    #设置打印格式
-    #%(asctime)表示当前时间，%(message)表示要打印的信息，用的时候会介绍。
-    formatter = logging.Formatter('%(asctime)s     %(message)s')
-    # file_log.setFormatter(formatter)
-    print_log.setFormatter(formatter)
-
-    # logger.addHandler(file_log)
-    logger.addHandler(print_log)
-    return logger
-
-
 #基本配置
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -48,14 +27,15 @@ setup_seed(3407)
 
 #loss = MSELoss(100)
 loss = nn.SmoothL1Loss(beta=0.05)
-md = MyDataset('./dataset/train/',shuffle=True,lenght=20000)
+md = MyDataset('./dataset/train/',shuffle=True,lenght=1000)
 net = ConModel(1)
 net.cuda()
 dl = DataLoader(md,batch_size=128)
-log =train_logger(1)
-num_epochs = 300
-optimizer = torch.optim.Adadelta(net.parameters(), lr=0.001)
-bset_loss=999
+num_epochs = 100
+# Adagrad Adadelta Adam SparseAdam AdamW ASGD LBFGS RMSprop
+# RMSprop Rprop
+optimizer = torch.optim.RMSprop( net.parameters() , lr=0.005)
+bset_loss = 999
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
     for i, (imgs, targets,_) in iter(pbar):

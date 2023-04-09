@@ -15,7 +15,7 @@ def setup_seed(seed):
     random.seed(seed)
     cudnn.deterministic = True
 setup_seed(3407)
-path='net_best.pt'
+path='net.pt'
 net = torch.load(path)
 md = MyDataset('./dataset/test/',shuffle=False,lenght= 100)
 net.cuda()
@@ -24,20 +24,18 @@ base_path='run'
 b=0
 ok=[]
 ng=[]
-error = 0.1
+error = 0.05
 for imgs, targets,path in iter(md):
     imgs = imgs.cuda()
     imgs =imgs.reshape(1,1,256,256)
     k_b= net(imgs).cpu()
     k=float(k_b)
-    k=math.log(k)
     img = cv2.imread(path)
     path=f"{base_path}/{i}.jpg"
     # 绘制点之间的连线
     cv2.line(img, (int(b),0), (512,int((512-b)/k)), (0, 255, 0), 2)
     cv2.imwrite(path,img)
 
-    targets=math.log(targets)
     print('index : %d ,predict k : %f, label k : %f' % (i , k , targets ))
     if abs( targets-k)>error:
         ng.append(i)

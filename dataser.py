@@ -33,7 +33,6 @@ class MyDataset(data.Dataset):
                         label = f.readline().split()
                         k=float(label[0])
                         # b=float(label[1])
-                        k=math.exp(k)
                         sortLabels.append(k)
                         # self.labels.append(torch.tensor([k,b]))
                         self.labels.append(k)
