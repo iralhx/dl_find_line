@@ -55,8 +55,7 @@ class MyDataset(data.Dataset):
     def proprecess(self,data):
         transform_train_list = [
             transforms.Resize((self.h, self.w), interpolation=1),
-            transforms.RandomCrop((self.h, self.w)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor()
+            transforms.ToTensor(),
+            # transforms.Normalize(mean=[0.5], std=[0.5])
             ]
         return transforms.Compose(transform_train_list)(data)

@@ -1,4 +1,5 @@
 import logging
+import time
 import numpy as np
 import random
 import torch.backends.cudnn as cudnn
@@ -25,32 +26,48 @@ def setup_seed(seed):
 setup_seed(3407)
 
 
-#loss = MSELoss(100)
+# loss = MSELoss(10)
 loss = nn.SmoothL1Loss(beta=0.05)
-md = MyDataset('./dataset/train/',shuffle=True,lenght=1000)
-net = ConModel(1)
+md = MyDataset('./dataset_small/train/',shuffle=True,lenght=100)
+net = ResModel1()
 net.cuda()
-dl = DataLoader(md,batch_size=128)
-num_epochs = 100
-# Adagrad Adadelta Adam SparseAdam AdamW ASGD LBFGS RMSprop
-# RMSprop Rprop
-optimizer = torch.optim.RMSprop( net.parameters() , lr=0.005)
+dl = DataLoader(md,batch_size=2)
+accum_step=8
+num_epochs = 30
+
+
+# Adagrad Adam SparseAdam AdamW ASGD LBFGS RMSprop Rprop
+# Adadelta
+optimizer = torch.optim.Adadelta( net.parameters() , lr=0.01)
+scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+
 bset_loss = 999
+step =0
+all_loss = 0
+s_t = time.time()
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
     for i, (imgs, targets,_) in iter(pbar):
+        step+=1
         imgs=imgs.cuda()
         targets=targets.cuda()
         net_out=net(imgs).to(torch.float64)
         l = loss(net_out, targets.to(torch.float64))
-        if bset_loss>l:
-            bset_loss=l
-            torch.save(net,"net_best.pt")
-            print('epoch %d, best_loss: %f' % (epoch, l))
-        optimizer.zero_grad()
+        l = l/accum_step
+        all_loss+=l
         l.backward()
-        # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradients
-        optimizer.step()
-        print('epoch %d, loss: %f' % (epoch, l))
-torch.save(net,"net.pt")
+        if step % accum_step ==0:
+            optimizer.step()
+            optimizer.zero_grad()
+            start_t1 = time.time() - s_t
+            s_t = time.time()
+            print('epoch %d, loss: %f , one update: %f s'% (epoch, all_loss,start_t1))
+            if bset_loss>all_loss:
+                bset_loss=all_loss
+                torch.save(net,"resnet_small_best.pt")
+                print('epoch %d, best_loss: %f' % (epoch, all_loss))
+            all_loss= 0
+        # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradient
+    scheduler.step()
+torch.save(net,"resnet_small.pt")
 print('finel bset loss: %f' % (bset_loss))

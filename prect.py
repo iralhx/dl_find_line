@@ -7,22 +7,17 @@ import torch.nn.functional as F
 from dataser import *
 import torch.backends.cudnn as cudnn
 import cv2
-def setup_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    cudnn.deterministic = True
-setup_seed(3407)
-path='net.pt'
+
+path='resnet_small_best.pt'
 net = torch.load(path)
+net.eval()
 md = MyDataset('./dataset/test/',shuffle=False,lenght= 100)
 net.cuda()
 i=1
 base_path='run'
 b=0
 ok=[]
+ok_k=[]
 ng=[]
 error = 0.05
 for imgs, targets,path in iter(md):
@@ -41,7 +36,15 @@ for imgs, targets,path in iter(md):
         ng.append(i)
     else:
         ok.append(i)
+        ok_k.append(targets)
     i=i+1
 print ("OK: %d" % (len(ok)))
 print (ok)
+
+plt.clf()
+ok_k.sort()
+x = np.arange(len(ok_k))
+plt.bar(x,ok_k)
+plt.savefig(f'ok_k.jpg')
+
 
