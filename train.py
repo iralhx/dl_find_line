@@ -11,6 +11,7 @@ from dataser import *
 from model import *
 from userloss import *
 from torch.optim.lr_scheduler import StepLR
+from zlceval import *
 
 #基本配置
 def setup_seed(seed):
@@ -28,20 +29,20 @@ setup_seed(3407)
 
 # loss = MSELoss(10)
 loss = nn.SmoothL1Loss(beta=0.05)
-md = MyDataset('./dataset_small/train/',shuffle=True,lenght=100)
-net = ResModel1()
+md = MyDataset('./dataset/train/',shuffle=True,lenght=1000)
+evalDataset = MyDataset('./dataset/test/')
+net = ConModel()
 net.cuda()
-dl = DataLoader(md,batch_size=2)
-accum_step=8
+dl = DataLoader(md,batch_size=8)
+accum_step=1
 num_epochs = 30
-
 
 # Adagrad Adam SparseAdam AdamW ASGD LBFGS RMSprop Rprop
 # Adadelta
 optimizer = torch.optim.Adadelta( net.parameters() , lr=0.01)
 scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
 
-bset_loss = 999
+bset_ecval = 0
 step =0
 all_loss = 0
 s_t = time.time()
@@ -61,13 +62,16 @@ for epoch in range(1, num_epochs + 1):
             optimizer.zero_grad()
             start_t1 = time.time() - s_t
             s_t = time.time()
-            print('epoch %d, loss: %f , one update: %f s'% (epoch, all_loss,start_t1))
-            if bset_loss>all_loss:
-                bset_loss=all_loss
-                torch.save(net,"resnet_small_best.pt")
-                print('epoch %d, best_loss: %f' % (epoch, all_loss))
+            # print('epoch %d, loss: %f , one update: %f s'% (epoch, all_loss,start_t1))
             all_loss= 0
         # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradient
     scheduler.step()
-torch.save(net,"resnet_small.pt")
-print('finel bset loss: %f' % (bset_loss))
+    ecval = zlceval(net,evalDataset)
+    if ecval>bset_ecval:
+        bset_ecval=ecval
+        torch.save(net,"net_best.pt")
+    print('epoch %d, bset_ecval: %f' % (epoch, bset_ecval))
+
+
+torch.save(net,"net.pt")
+print('finel bset bset_ecval: %f' % (bset_ecval))

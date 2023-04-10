@@ -24,7 +24,6 @@ class SpatialAttention(nn.Module):
         output = self.conv(result)
         output = self.sigmoid(output)
         return output
-    
 
 class kk(nn.Module):
     def __init__(self, max_k,min_k):            
@@ -41,55 +40,42 @@ class kk(nn.Module):
         output = self.mind_k + input * self.weight
         return output
 
-
 class ConModel(nn.Module):
-    def __init__(self, num_class):
+    def __init__(self):
         super(ConModel,self).__init__()
-        C = num_class
-
         layer1_channels=8
         self.conv_layer1=nn.Sequential(
             nn.Conv2d(in_channels=1,out_channels=layer1_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer1_channels),
             nn.ReLU()
         )#layer1_channels*128*128
-        layer2_channels=16
+        layer2_channels=8
         self.conv_layer2=nn.Sequential(
             nn.Conv2d(in_channels=layer1_channels,out_channels=layer2_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer2_channels),
             nn.ReLU()
         )#layer2_channels*64*64
-        layer3_channels=32
+        layer3_channels=16
         self.conv_layer3=nn.Sequential(
             nn.Conv2d(in_channels=layer2_channels,out_channels=layer3_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer3_channels),
             nn.ReLU()
         )#layer3_channels*32*32
-        layer4_channels=64
-        self.conv_layer4=nn.Sequential(
-            nn.Conv2d(in_channels=layer3_channels,out_channels=layer4_channels,kernel_size=3,stride=2,padding=3//2),
-            nn.BatchNorm2d(layer4_channels),
-            nn.ReLU()
-        )#layer4_channels*16*16
-        layer5_channels=256
-        self.conv_layer5=nn.Sequential(
-            nn.Conv2d(in_channels=layer4_channels,out_channels=layer5_channels,kernel_size=3,stride=2,padding=3//2),
-            nn.BatchNorm2d(layer5_channels),
-            nn.ReLU()
-        )#layer5_channels*8*8
-        layer6_channels=256
-        self.conv_layer6=nn.Sequential(
-            nn.Conv2d(in_channels=layer5_channels,out_channels=layer6_channels,kernel_size=3,stride=2,padding=3//2),
-            nn.BatchNorm2d(layer6_channels),
-            nn.ReLU()
-        )#layer6_channels*4*4
+        self.res1=resnet.ResnetBasicBlock(layer3_channels,layer3_channels) 
+        layer4_channels=32
+        self.res2=resnet.ResnetBasicBlock(layer3_channels,layer4_channels,2) 
+        # 16*16
+        self.res3=resnet.ResnetBasicBlock(layer4_channels,layer4_channels,2) 
+        #8*8
+        self.res4=resnet.ResnetBasicBlock(layer4_channels,layer4_channels,2) 
+        #4*4
         self.flatten = Flatten()
-        head=1024
-        self.tr1=TransformerLayer(layer6_channels*4*4,head)
-        self.conn_layer1 = nn.Sequential(nn.Linear(in_features=layer6_channels*4*4,out_features=16),
+        head=256
+        self.tr1=TransformerLayer(layer4_channels*4*4,head)
+        self.conn_layer1 = nn.Sequential(nn.Linear(in_features=layer4_channels*4*4,out_features=256),
             nn.Dropout(0.2),
             nn.ReLU())
-        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=16,out_features=1))
+        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=256,out_features=1))
         #    self.kk = kk(0.6,1)
         self._initialize_weights()
        
@@ -97,9 +83,10 @@ class ConModel(nn.Module):
         output = self.conv_layer1(input)
         output = self.conv_layer2(output)
         output = self.conv_layer3(output)
-        output = self.conv_layer4(output)
-        output = self.conv_layer5(output)
-        output = self.conv_layer6(output)
+        output = self.res1(output)
+        output = self.res2(output)
+        output = self.res3(output)
+        output = self.res4(output)
         output = self.flatten(output)
         output = self.tr1(output)
         output = self.conn_layer1(output)
@@ -121,7 +108,6 @@ class ConModel(nn.Module):
                 m.weight.data.normal_(0, 0.01)
                 if m.bias != None:
                         m.bias.data.zero_() 
-
 
 class ResModel(nn.Module):
     def __init__(self):
@@ -166,8 +152,6 @@ class ResModel(nn.Module):
         # output = self.kk(output)
         return output
 
-
-
 class ResModel1(nn.Module):
     def __init__(self):
         super(ResModel1,self).__init__()
@@ -211,7 +195,6 @@ class ResModel1(nn.Module):
         output = self.conn_layer2(output)
         # output = self.kk(output)
         return output
-
 
 class ResModelSmall(nn.Module):
     def __init__(self):

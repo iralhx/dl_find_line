@@ -8,9 +8,21 @@ from dataser import *
 import torch.backends.cudnn as cudnn
 import cv2
 
-path='resnet_small_best.pt'
-net = torch.load(path)
-net.eval()
+#基本配置
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    cudnn.deterministic = True
+#使用方法
+#在train文件下调用下面这行命令，参数随意设置，
+#只要这个参数数值一样，每次生成的顺序也就一样
+setup_seed(3407)
+path='net_best.pt'
+net = torch.load(path).cuda()
+# net.eval()
 md = MyDataset('./dataset/test/',shuffle=False,lenght= 100)
 net.cuda()
 i=1

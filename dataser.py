@@ -10,7 +10,7 @@ import math
 import random
 
 class MyDataset(data.Dataset):
-    def __init__(self,data_folder,shuffle = False,lenght=99999999):
+    def __init__(self,data_folder,draw_img=False,shuffle = False,lenght=99999999):
         self.data_folder = data_folder
         img_path=f'{data_folder}/images'
         label_path=f'{data_folder}/labels'
@@ -38,10 +38,11 @@ class MyDataset(data.Dataset):
                         self.labels.append(k)
             if len(self.labels)>lenght:
                  break
-        sortLabels.sort()
-        x = np.arange(len(sortLabels))
-        plt.bar(x,sortLabels)
-        plt.savefig(f'data.jpg')
+        if draw_img:
+            sortLabels.sort()
+            x = np.arange(len(sortLabels))
+            plt.bar(x,sortLabels)
+            plt.savefig(f'data.jpg')
 
     def __getitem__(self, index):
         image = Image.open(self.filenames[index])
