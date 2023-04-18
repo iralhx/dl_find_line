@@ -245,7 +245,6 @@ class ResModelSmall(nn.Module):
         return output
     
 
-
 class FullConModel(nn.Module):
     def __init__(self):
         super(FullConModel,self).__init__()
@@ -259,7 +258,7 @@ class FullConModel(nn.Module):
         self.conv_layer7=self._make_up_layer(64,32)#32
         self.conv_layer8=self._make_up_layer(32,16)#64
         self.conv_layer9=self._make_up_layer(16,8)#128
-        self.conv_layer10=self._make_up_layer(8,1)#256
+        self.conv_layer10=self._make_up_layer(8,1,activa='Sigmoid')#256
     
 
     def _make_down_layer(self,intput,output,kernel_size=3,stride=2):
@@ -271,13 +270,21 @@ class FullConModel(nn.Module):
         )
         return layer
     
-    def _make_up_layer(self,intput,output,kernel_size=3,stride=2):
-        layer=nn.Sequential(
-            nn.ConvTranspose2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
-                        ,stride=stride,padding=kernel_size//stride,output_padding=1),
-            nn.BatchNorm2d(output),
-            nn.ReLU()
-        )
+    def _make_up_layer(self,intput,output,kernel_size=3,stride=2,activa='Relu'):
+        if activa=='Relu':
+            layer=nn.Sequential(
+                nn.ConvTranspose2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
+                            ,stride=stride,padding=kernel_size//stride,output_padding=1),
+                nn.BatchNorm2d(output),
+                nn.ReLU()
+            )
+        elif activa=='Sigmoid':
+            layer=nn.Sequential(
+                nn.ConvTranspose2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
+                            ,stride=stride,padding=kernel_size//stride,output_padding=1),
+                nn.BatchNorm2d(output),
+                nn.Sigmoid()
+            )
         return layer
 
 
@@ -298,17 +305,3 @@ class FullConModel(nn.Module):
         o9=o1+o9
         output = self.conv_layer10(o9)
         return output
-   
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                m.weight.data.normal_(0, 0.01)
-                if m.bias != None:
-                        m.bias.data.zero_() 

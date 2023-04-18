@@ -6,7 +6,7 @@ def uloss(output,terget):
     return nn.MSELoss(output,terget)
 
 class MSELoss(nn.Module):
-    def __init__(self, weight):
+    def __init__(self, weight=1):
         super(MSELoss, self).__init__()
         self.weight = weight
     

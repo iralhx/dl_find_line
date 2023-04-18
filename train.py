@@ -25,22 +25,23 @@ def setup_seed(seed):
 setup_seed(3407)
 
 
-# loss = MSELoss(10)
-loss = nn.SmoothL1Loss(beta=0.05)
-md = KpDataset('./dataset/train/',shuffle=True,lenght=100)
+loss = MSELoss()
+# loss = nn.SmoothL1Loss(beta=0.05)
+md = KpDataset('./dataset/train/',shuffle=True,lenght=1000)
 evalDataset = KpDataset('./dataset/test/')
 net = FullConModel()
 net.cuda()
-dl = DataLoader(md,batch_size=8)
+dl = DataLoader(md,batch_size=16)
 accum_step=1
-num_epochs = 30
+num_epochs = 100
 
 # Adagrad Adam SparseAdam AdamW ASGD LBFGS RMSprop Rprop
 # Adadelta
-optimizer = torch.optim.Adadelta( net.parameters() , lr=0.01)
-scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+# optimizer = torch.optim.Adadelta( net.parameters() , lr=0.01)
+optimizer = torch.optim.SGD( net.parameters() , lr=0.01)
+scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
 
-bset_ecval = 0
+bset_ecval = 999
 epoch_last_loss = 0
 step =0
 for epoch in range(1, num_epochs + 1):
@@ -60,7 +61,7 @@ for epoch in range(1, num_epochs + 1):
         # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradient
     scheduler.step()
     ecval = zlceval(net,evalDataset,loss)
-    if ecval>bset_ecval:
+    if ecval<bset_ecval:
         bset_ecval=ecval
         torch.save(net,"net_best.pt")
     print('epoch %d, bset_ecval: %f' % (epoch, bset_ecval))
