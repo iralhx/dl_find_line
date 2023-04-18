@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from dataser import *
 import torch.backends.cudnn as cudnn
 import cv2
+import time
 
 #基本配置
 def setup_seed(seed):
@@ -22,9 +23,8 @@ def setup_seed(seed):
 setup_seed(3407)
 path='net_best.pt'
 net = torch.load(path).cuda()
-# net.eval()
-md = MyDataset('./dataset/test/',shuffle=False,lenght= 100)
-net.cuda()
+net.eval()
+md = MyDataset('./dataset/eval/',shuffle=False)
 i=1
 base_path='run'
 b=0
@@ -32,31 +32,44 @@ ok=[]
 ok_k=[]
 ng=[]
 error = 0.05
+all_time=0
 for imgs, targets,path in iter(md):
     imgs = imgs.cuda()
     imgs =imgs.reshape(1,1,256,256)
+    start=time.time()
     k_b= net(imgs).cpu()
-    k=float(k_b)
+    all_time += time.time() - start
+    label_img = (k_b<=0.7)
+    label_img=label_img.reshape(256,256)
+    label_img=[label_img.numpy(),label_img.numpy(),label_img.numpy()]
+    label_img =np.array( label_img)
+    label_img=label_img.reshape(256,256,3)
+    # writeimg = np.zeros((256,256), dtype=np.float32)
+    # writeimg[label_img]=255
     img = cv2.imread(path)
+    img[label_img]=100
     path=f"{base_path}/{i}.jpg"
-    # 绘制点之间的连线
-    cv2.line(img, (int(b),0), (512,int((512-b)/k)), (0, 255, 0), 2)
+    # # 绘制点之间的连线
+    # cv2.line(img, (int(b),0), (512,int((512-b)/k)), (0, 255, 0), 2)
     cv2.imwrite(path,img)
-
-    print('index : %d ,predict k : %f, label k : %f' % (i , k , targets ))
-    if abs( targets-k)>error:
-        ng.append(i)
-    else:
-        ok.append(i)
-        ok_k.append(targets)
     i=i+1
-print ("OK: %d" % (len(ok)))
-print (ok)
 
-plt.clf()
-ok_k.sort()
-x = np.arange(len(ok_k))
-plt.bar(x,ok_k)
-plt.savefig(f'ok_k.jpg')
+#     print('index : %d ,predict k : %f, label k : %f' % (i , k , targets ))
+#     if abs( targets-k)>error:
+#         ng.append(i)
+#     else:
+#         ok.append(i)
+#         ok_k.append(targets)
+#     i=i+1
+# print ('avg once time : %d'%(all_time/len(md)))
+# print ("OK: %d" % (len(ok)))
+# print (ok)
+
+
+# plt.clf()
+# ok_k.sort()
+# x = np.arange(len(ok_k))
+# plt.bar(x,ok_k)
+# plt.savefig(f'ok_k.jpg')
 
 

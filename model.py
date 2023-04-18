@@ -43,39 +43,46 @@ class kk(nn.Module):
 class ConModel(nn.Module):
     def __init__(self):
         super(ConModel,self).__init__()
-        layer1_channels=8
+        layer1_channels=16
         self.conv_layer1=nn.Sequential(
             nn.Conv2d(in_channels=1,out_channels=layer1_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer1_channels),
             nn.ReLU()
         )#layer1_channels*128*128
-        layer2_channels=8
+        layer2_channels=32
         self.conv_layer2=nn.Sequential(
             nn.Conv2d(in_channels=layer1_channels,out_channels=layer2_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer2_channels),
             nn.ReLU()
         )#layer2_channels*64*64
-        layer3_channels=16
+        layer3_channels=64
         self.conv_layer3=nn.Sequential(
             nn.Conv2d(in_channels=layer2_channels,out_channels=layer3_channels,kernel_size=3,stride=2,padding=3//2),
             nn.BatchNorm2d(layer3_channels),
+            nn.ReLU()
+        )#layer3_channels*64*64
+        layer4_channels=128
+        self.conv_layer3=nn.Sequential(
+            nn.Conv2d(in_channels=layer4_channels,out_channels=layer4_channels,kernel_size=3,stride=2,padding=3//2),
+            nn.BatchNorm2d(layer4_channels),
             nn.ReLU()
         )#layer3_channels*32*32
         self.res1=resnet.ResnetBasicBlock(layer3_channels,layer3_channels) 
         layer4_channels=32
         self.res2=resnet.ResnetBasicBlock(layer3_channels,layer4_channels,2) 
-        # 16*16
-        self.res3=resnet.ResnetBasicBlock(layer4_channels,layer4_channels,2) 
-        #8*8
+        self.res3=resnet.ResnetBasicBlock(layer4_channels,layer4_channels) 
+        # 32*32
         self.res4=resnet.ResnetBasicBlock(layer4_channels,layer4_channels,2) 
-        #4*4
+        #16*16
         self.flatten = Flatten()
-        head=256
-        self.tr1=TransformerLayer(layer4_channels*4*4,head)
-        self.conn_layer1 = nn.Sequential(nn.Linear(in_features=layer4_channels*4*4,out_features=256),
-            nn.Dropout(0.2),
+        self.conn_layer1 = nn.Sequential(nn.Linear(in_features=layer4_channels*16*16,out_features=1024),
+            nn.Dropout(0.5),
             nn.ReLU())
-        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=256,out_features=1))
+        self.conn_layer2 = nn.Sequential(nn.Linear(in_features=1024,out_features=256),
+            nn.Dropout(0.5),
+            nn.ReLU())
+        self.tr1=TransformerLayer(256,256)
+        self.conn_layer3 = nn.Sequential(nn.Linear(in_features=256,out_features=1))
         #    self.kk = kk(0.6,1)
         self._initialize_weights()
        
@@ -88,9 +95,10 @@ class ConModel(nn.Module):
         output = self.res3(output)
         output = self.res4(output)
         output = self.flatten(output)
-        output = self.tr1(output)
         output = self.conn_layer1(output)
         output = self.conn_layer2(output)
+        output = self.tr1(output)
+        output = self.conn_layer3(output)
         #    output = self.kk(output)
         return output
    
@@ -235,3 +243,72 @@ class ResModelSmall(nn.Module):
         output = self.conn_layer2(output)
         # output = self.kk(output)
         return output
+    
+
+
+class FullConModel(nn.Module):
+    def __init__(self):
+        super(FullConModel,self).__init__()
+
+        self.conv_layer1=self._make_down_layer(1,8)#128
+        self.conv_layer2=self._make_down_layer(8,16)#64
+        self.conv_layer3=self._make_down_layer(16,32)#32
+        self.conv_layer4=self._make_down_layer(32,64)#16
+        self.conv_layer5=self._make_down_layer(64,128)#8
+        self.conv_layer6=self._make_up_layer(128,64)#16
+        self.conv_layer7=self._make_up_layer(64,32)#32
+        self.conv_layer8=self._make_up_layer(32,16)#64
+        self.conv_layer9=self._make_up_layer(16,8)#128
+        self.conv_layer10=self._make_up_layer(8,1)#256
+    
+
+    def _make_down_layer(self,intput,output,kernel_size=3,stride=2):
+        layer=nn.Sequential(
+            nn.Conv2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
+                        ,stride=stride,padding=kernel_size//stride),
+            nn.BatchNorm2d(output),
+            nn.ReLU()
+        )
+        return layer
+    
+    def _make_up_layer(self,intput,output,kernel_size=3,stride=2):
+        layer=nn.Sequential(
+            nn.ConvTranspose2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
+                        ,stride=stride,padding=kernel_size//stride,output_padding=1),
+            nn.BatchNorm2d(output),
+            nn.ReLU()
+        )
+        return layer
+
+
+
+    def forward(self,input):
+        o1 = self.conv_layer1(input)
+        o2 = self.conv_layer2(o1)
+        o3 = self.conv_layer3(o2)
+        o4 = self.conv_layer4(o3)
+        o5 = self.conv_layer5(o4)
+        o6 = self.conv_layer6(o5)
+        o6=o4+o6
+        o7 = self.conv_layer7(o6)
+        o7=o3+o7
+        o8 = self.conv_layer8(o7)
+        o8=o2+o8
+        o9 = self.conv_layer9(o8)
+        o9=o1+o9
+        output = self.conv_layer10(o9)
+        return output
+   
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
+                if m.bias != None:
+                        m.bias.data.zero_() 

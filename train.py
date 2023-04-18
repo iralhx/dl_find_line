@@ -1,5 +1,3 @@
-import logging
-import time
 import numpy as np
 import random
 import torch.backends.cudnn as cudnn
@@ -29,9 +27,9 @@ setup_seed(3407)
 
 # loss = MSELoss(10)
 loss = nn.SmoothL1Loss(beta=0.05)
-md = MyDataset('./dataset/train/',shuffle=True,lenght=1000)
-evalDataset = MyDataset('./dataset/test/')
-net = ConModel()
+md = KpDataset('./dataset/train/',shuffle=True,lenght=100)
+evalDataset = KpDataset('./dataset/test/')
+net = FullConModel()
 net.cuda()
 dl = DataLoader(md,batch_size=8)
 accum_step=1
@@ -43,35 +41,29 @@ optimizer = torch.optim.Adadelta( net.parameters() , lr=0.01)
 scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
 
 bset_ecval = 0
+epoch_last_loss = 0
 step =0
-all_loss = 0
-s_t = time.time()
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
     for i, (imgs, targets,_) in iter(pbar):
         step+=1
         imgs=imgs.cuda()
         targets=targets.cuda()
-        net_out=net(imgs).to(torch.float64)
-        l = loss(net_out, targets.to(torch.float64))
+        net_out=net(imgs)
+        l = loss(net_out, targets)
+        epoch_last_loss = l
         l = l/accum_step
-        all_loss+=l
         l.backward()
         if step % accum_step ==0:
             optimizer.step()
             optimizer.zero_grad()
-            start_t1 = time.time() - s_t
-            s_t = time.time()
-            # print('epoch %d, loss: %f , one update: %f s'% (epoch, all_loss,start_t1))
-            all_loss= 0
         # torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=10.0)  # clip gradient
     scheduler.step()
-    ecval = zlceval(net,evalDataset)
+    ecval = zlceval(net,evalDataset,loss)
     if ecval>bset_ecval:
         bset_ecval=ecval
         torch.save(net,"net_best.pt")
     print('epoch %d, bset_ecval: %f' % (epoch, bset_ecval))
-
+    print('epoch %d, loss: %f' % (epoch, epoch_last_loss))
 
 torch.save(net,"net.pt")
-print('finel bset bset_ecval: %f' % (bset_ecval))
