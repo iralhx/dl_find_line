@@ -11,7 +11,7 @@ import cv2
 def zlceval(net,evalset ,loss):
     net.eval()
     all_loss=0
-    for imgs, targets,_ in iter(evalset):
+    for imgs, targets,_,_ in iter(evalset):
         imgs = imgs.cuda()
         imgs =imgs.reshape(1,1,256,256)
         k= net(imgs).cpu()
