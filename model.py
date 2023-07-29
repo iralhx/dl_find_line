@@ -305,3 +305,25 @@ class FullConModel(nn.Module):
         o9=o1+o9
         output = self.conv_layer10(o9)
         return output
+
+
+
+class ZlcNet(nn.Module):
+    def __init__(self):
+        super(ZlcNet,self).__init__()
+        self.block1=FullConModel()
+        self.block2=FullConModel()
+        self.block3=FullConModel()
+        self.block4=FullConModel()
+        self.block5=FullConModel()
+    
+
+
+    def forward(self,input):
+        
+        output = self.block1(input)
+        output = self.block2(input)
+        output = self.block3(input)
+        output = self.block4(input)
+        output = self.block5(input)
+        return output

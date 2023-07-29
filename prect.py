@@ -14,7 +14,7 @@ net = torch.load(path).cuda()
 net.eval()
 for param in net.parameters():
     param.requires_grad = False
-md = KpDataset('./dataset/eval/',shuffle=False,lenght=100)
+md = KpDataset('source_img/eval/',shuffle=False,lenght=100)
 i=1
 base_path='run'
 b=0
@@ -38,6 +38,11 @@ for imgs, _ ,path,l_k in iter(md):
 
     points=np.array(points)
     # 拟合直线
+
+    if  points.size==0:
+        logging.info('没有找到边')
+        continue
+
     output = cv2.fitLine(points, cv2.DIST_L2, 0, 0.01, 0.01)
 
     # 计算直线起点和终点

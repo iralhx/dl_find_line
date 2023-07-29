@@ -15,15 +15,15 @@ writer = SummaryWriter()
 setup_seed(3407)
 
 loss = MSELoss()
-md = KpDataset('./dataset/train/',shuffle=True,lenght=1000)
-evalDataset = KpDataset('./dataset/test/')
-net = FullConModel()
+md = KpDatasetNew('./source_img/train/',shuffle=True,lenght=1000)
+# evalDataset = KpDataset('./source/eval/')
+net = ZlcNet()
 net.cuda()
 input =torch.randn(1, 1, 256, 256).cuda()
 writer.add_graph(net, input)
 dl = DataLoader(md,batch_size=16)
 accum_step=1
-num_epochs = 1000
+num_epochs = 500
 
 # Adagrad Adam SparseAdam AdamW ASGD LBFGS RMSprop Rprop
 # Adadelta
