@@ -17,30 +17,30 @@ setup_seed(3407)
 loss = MSELoss()
 md = KpDatasetNew('./source_img/train/',shuffle=True,lenght=1000)
 # evalDataset = KpDataset('./source/eval/')
-net = ZlcNet()
+net = UNet(1,1)
 net.cuda()
 input =torch.randn(1, 1, 256, 256).cuda()
 writer.add_graph(net, input)
 dl = DataLoader(md,batch_size=16)
 accum_step=1
-num_epochs = 500
+num_epochs = 50
 
 # Adagrad Adam SparseAdam AdamW ASGD LBFGS RMSprop Rprop
 # Adadelta
 optimizer = torch.optim.SGD( net.parameters() , lr=0.01)
-scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
+scheduler = StepLR(optimizer, step_size=300, gamma=0.1)
 
 bset_ecval = 999
 epoch_last_loss = 0
 step =0
 for epoch in range(1, num_epochs + 1):
     pbar = enumerate(dl)
-    for i, (imgs, targets,_,_) in iter(pbar):
+    for i, (imgs, targets,_,k) in iter(pbar):
         step+=1
         imgs=imgs.cuda()
         targets=targets.cuda()
         net_out=net(imgs)
-        l = loss(net_out, targets)
+        l = loss(net_out, targets,k)
         epoch_last_loss = l
         l = l/accum_step
         l.backward()

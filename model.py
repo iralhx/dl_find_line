@@ -3,6 +3,7 @@ import torch.nn as nn
 import math
 from transformersmodel import *
 import resnet
+from unit import *
 
 
 class Flatten(nn.Module):
@@ -245,15 +246,19 @@ class ResModelSmall(nn.Module):
         return output
     
 
+
+
 class FullConModel(nn.Module):
     def __init__(self):
         super(FullConModel,self).__init__()
-
-        self.conv_layer1=self._make_down_layer(1,8)#128
-        self.conv_layer2=self._make_down_layer(8,16)#64
-        self.conv_layer3=self._make_down_layer(16,32)#32
-        self.conv_layer4=self._make_down_layer(32,64)#16
-        self.conv_layer5=self._make_down_layer(64,128)#8
+        self.c1=C3(1,32)
+        self.c2=C3(32,64)
+        self.c3=C3(64,32)
+        self.conv_layer1=self._make_down_layer(32,64)#128
+        self.conv_layer2=self._make_down_layer(64,128)#64
+        self.conv_layer3=self._make_down_layer(128,128)#32
+        self.conv_layer4=self._make_down_layer(128,128)#16
+        self.conv_layer5=self._make_down_layer(128,128)#8
         self.conv_layer6=self._make_up_layer(128,64)#16
         self.conv_layer7=self._make_up_layer(64,32)#32
         self.conv_layer8=self._make_up_layer(32,16)#64
@@ -261,7 +266,7 @@ class FullConModel(nn.Module):
         self.conv_layer10=self._make_up_layer(8,1,activa='Sigmoid')#256
     
 
-    def _make_down_layer(self,intput,output,kernel_size=3,stride=2):
+    def _make_down_layer(self,intput,output,kernel_size=7,stride=2):
         layer=nn.Sequential(
             nn.Conv2d(in_channels=intput,out_channels=output,kernel_size=kernel_size
                         ,stride=stride,padding=kernel_size//stride),
@@ -290,40 +295,113 @@ class FullConModel(nn.Module):
 
 
     def forward(self,input):
-        o1 = self.conv_layer1(input)
-        o2 = self.conv_layer2(o1)
-        o3 = self.conv_layer3(o2)
-        o4 = self.conv_layer4(o3)
-        o5 = self.conv_layer5(o4)
-        o6 = self.conv_layer6(o5)
-        o6=o4+o6
-        o7 = self.conv_layer7(o6)
-        o7=o3+o7
-        o8 = self.conv_layer8(o7)
-        o8=o2+o8
-        o9 = self.conv_layer9(o8)
-        o9=o1+o9
-        output = self.conv_layer10(o9)
+        o1 = self.c1(input)
+        o2 = self.c2(o1)
+        o3 = self.c3(o2)
+        # o3=o1+o3
+
+
+
+        o4 = self.conv_layer1(o3)
+        o5 = self.conv_layer2(o4)
+        o6 = self.conv_layer3(o5)
+        o7 = self.conv_layer4(o6)
+        o8 = self.conv_layer5(o7)
+        o9 = self.conv_layer6(o8)
+        # o9=o7+o9
+        o10 = self.conv_layer7(o9)
+        # o10=o6+o10
+        o11 = self.conv_layer8(o10)
+        # o11=o5+o11
+        o12 = self.conv_layer9(o11)
+        # o12=o4+o12
+        output = self.conv_layer10(o12)
         return output
 
 
 
-class ZlcNet(nn.Module):
-    def __init__(self):
-        super(ZlcNet,self).__init__()
-        self.block1=FullConModel()
-        self.block2=FullConModel()
-        self.block3=FullConModel()
-        self.block4=FullConModel()
-        self.block5=FullConModel()
-    
+import torch
+import torch.nn as nn
 
+class UNet(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(UNet, self).__init__()
 
-    def forward(self,input):
-        
-        output = self.block1(input)
-        output = self.block2(input)
-        output = self.block3(input)
-        output = self.block4(input)
-        output = self.block5(input)
+        # 定义编码器部分
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+
+        # 定义解码器部分
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+
+            nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+
+            nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+
+        # 最后的1x1卷积层用于产生最终的输出
+        self.final_conv = nn.Conv2d(64, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        # 编码器部分
+        x1 = self.encoder(x)
+
+        # 解码器部分
+        x2 = self.decoder(x1)
+
+        # 最后的1x1卷积层，输出最终的结果
+        output = self.final_conv(x2)
+
         return output
+

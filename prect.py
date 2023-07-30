@@ -15,7 +15,7 @@ net.eval()
 for param in net.parameters():
     param.requires_grad = False
 md = KpDataset('source_img/eval/',shuffle=False,lenght=100)
-i=1
+i=0
 base_path='run'
 b=0
 ok=[]
@@ -24,6 +24,7 @@ ng=[]
 confi=0.87
 confi_result=0.7
 for imgs, _ ,path,l_k in iter(md):
+    i=i+1
     imgs = imgs.cuda()
     imgs =imgs.reshape(1,1,256,256)
     start=time.time()
@@ -39,6 +40,11 @@ for imgs, _ ,path,l_k in iter(md):
     points=np.array(points)
     # 拟合直线
 
+    save_result = result.reshape(256, 256).numpy()
+    # save_result[label_img>confi_result]=1
+    # save_result[label_img<=confi_result]=0
+    write_result_path=f"{base_path}/{i}_result.jpg"
+    cv2.imwrite(write_result_path,save_result*255)
     if  points.size==0:
         logging.info('没有找到边')
         continue
@@ -55,12 +61,6 @@ for imgs, _ ,path,l_k in iter(md):
     write_path=f"{base_path}/{i}.jpg"
     cv2.imwrite(write_path,img)
     
-    save_result = result.reshape(256, 256).numpy()
-    # save_result[label_img>confi_result]=1
-    # save_result[label_img<=confi_result]=0
-    write_result_path=f"{base_path}/{i}_result.jpg"
-    cv2.imwrite(write_result_path,save_result*255)
     
     logging.info('index %d, label_k: %f, result_k: %f ,time %f', i, l_k , k ,spand)
-    i=i+1
 
